@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json">
+    <title>Total Tic Tac Toe</title>
+    <style>
+            .board {
+                display: flex;
+                width: 600px;
+                height: 600px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                padding: 50px;
+            }
+    
+            .box {
+                display: flex;
+                height: 200px;
+                width: 200px;
+                box-sizing: border-box;
+                border: 3px solid black;
+                font-size: 5em;
+                justify-content: center;
+                align-items: center
+            }
+    
+            .box:hover {
+                cursor: pointer;
+                background-color: aquamarine
+            }
+
+            .nextPLayer {
+                display: flex;
+                padding: 50px;
+                font-style: bold;
+            }
+        </style>
+    
+  </head>
+  <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="index"></div>
+  </body>
+</html>
