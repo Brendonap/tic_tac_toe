@@ -22,11 +22,60 @@
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.board {
+  display: flex;
+  width: 600px;
+  height: 600px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding: 50px;
+}
+
+.box {
+  display: flex;
+  height: 200px;
+  width: 200px;
+  box-sizing: border-box;
+  border: 3px solid black;
+  font-size: 5em;
+  justify-content: center;
+  align-items: center
+}
+
+.box:hover {
+  cursor: pointer;
+  background-color: aquamarine
+}
+
+.nextPLayer {
+  display: flex;
+  padding: 50px;
+  font-style: bold;
+}
+
+.menu {
+  display: flex;
+  justify-content: center;
+}
+
+p {
+  display: flex;
+  justify-content: center;
+}
+
+.gameOptionButtons {
+  display: flex;
+  justify-content: center;
+}
+
+html {
+  display: flex;
+  flex-flow: row nowrap;  
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background:#eeeeee;
 }
