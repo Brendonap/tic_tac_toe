@@ -1,7 +1,6 @@
 from flask import Flask, request, Response
 import json
 from flask_sqlalchemy import SQLAlchemy
-# import models
 
 app = Flask(__name__, template_folder="../public")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tictac.db'
