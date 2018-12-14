@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
-import { PLAYER_ONE, PLAYER_TWO, SERVER_ADDRESS_SAVE, SERVER_ADDRESS_LOAD} from './consts'
+import socketIOClient from 'socket.io-client'
+import { PLAYER_ONE, PLAYER_TWO, SERVER_ADDRESS} from './consts'
 
 
 class App extends Component {
@@ -8,6 +9,8 @@ class App extends Component {
   constructor(props) {
     super(props)
     const firstToGo = this.startingPlayer()
+    this.socket = socketIOClient(SERVER_ADDRESS)
+
     this.state = {
       playerOneSymbol: PLAYER_ONE,
       playerTwoSymbol: PLAYER_TWO,
@@ -16,7 +19,8 @@ class App extends Component {
         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '
       ],
       isWin: false,
-      whoWon: null
+      whoWon: null,
+      againstAI: true
     }
   }
 
@@ -28,121 +32,88 @@ class App extends Component {
   }
 
   gameMoveClickHandler(boxIndex) {
-    const { gameBoard, currentTurn } = this.state
+    const { gameBoard, currentTurn, againstAI } = this.state
 
     // check if box is empty
     if (gameBoard[boxIndex] === ' ') {
       gameBoard[boxIndex] = currentTurn
             
-      this.setState({          
-          currentTurn: this.nextTurn(),
-          gameBoard   
-      })     
-    }
+      this.setState({gameBoard})
 
-    // check winning if winning combination after each turn 
-    this.checkWinningCondition()
+      // check winning if winning combination after each turn 
+      this.checkWinningCondition()
+      if (againstAI === true) {
+        this.aiDecision()
+      }
+
+      this.setState({currentTurn: this.nextTurn()})
+    }
+  }
+
+  // make computer move
+  aiDecision() {
+    this.socket.emit('ai-decision', this.state, (res) => {
+      const data = JSON.parse(res)
+      this.setState({
+        gameBoard: data['data']['gameBoard'],
+      })
+      this.checkWinningCondition()
+      this.setState({
+        currentTurn: this.nextTurn()
+      })
+    })
   }
 
   nextTurn() {
     return this.state.currentTurn === PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
   }
 
-  loadPreviousGmeState() {
-    const params = {
-      method: 'OPTIONS',
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': '*'
-      },  
-    }
-
-    fetch(SERVER_ADDRESS_LOAD, params).then(response => {
-      return response.json().then(body => {
-          if (response.status === 200) {
-            this.setState({
-              gameBoard: body['gameBoard'],
-              currentTurn: body['currentTurn']
-            })
-          } else {
-            throw body;
-          }
+  loadPreviousGameState() {
+    this.socket.emit('load')
+    console.log("here")
+    this.socket.on('load-response', (res) => {
+      const data = JSON.parse(res)
+      this.setState({
+        gameBoard: data['gameBoard'],
+        currentTurn: data['CurrentTurn']
       })
-    });
-  }
-
-  saveCurrentStateToServer() {   
-    const { gameBoard, currentTurn } = this.state;
-    const body = JSON.stringify({gameBoard, currentTurn: currentTurn});
-    const params = {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json'
-      },  
-      body
-    };
-    fetch(SERVER_ADDRESS_SAVE, params);
-  }
-
-  /* We loop over the possible winning combinations and extract the given index from the current gameBoard state,
-  winning combinations are a winning combination whose values are the same. */
-  checkWinningCondition() {
-    const { currentTurn, gameBoard } = this.state;
-    const possibleWinCombinations = [
-      ['0', '1', '2'],
-      ['3', '4', '5'],
-      ['6', '7', '8'],
-      ['0', '3', '6'],
-      ['1', '4', '7'],
-      ['2', '5', '8'],
-      ['0', '4', '8'],
-      ['2', '4', '6']
-    ];
-
-    possibleWinCombinations.forEach((list) => {
-      if (
-       currentTurn === gameBoard[list[0]] &&
-       currentTurn === gameBoard[list[1]] &&
-       currentTurn === gameBoard[list[2]]
-        ) {
-          this.setState({
-            isWin: true,
-            whoWon: currentTurn
-          })
-        };
     })
   }
 
-  renderResetButton() {
-    return (
-      <button 
-        type='button' 
-        onClick={() => {document.location.reload(true)}}>
-        Reset
-      </button>
-    )
+  saveCurrentStateToServer() {   
+    this.socket.emit('save', this.state) 
   }
 
-  renderSaveButton() {
-    return (
-      <button 
-        type='button' 
-        onClick={() => {this.saveCurrentStateToServer()}}>
-        Save Game
-      </button>
-    )
+  checkWinningCondition() {
+    this.socket.emit('winning-decision', this.state, (res) => {
+      const data = JSON.parse(res)
+      this.setState({
+        isWin: data['isWin'],
+        whoWon: this.nextTurn()
+      })
+    })
   }
+
   
-  renderLoadButton() {
+  renderButtons() {
     return (
-      <button 
-        type='button' 
-        onClick={() => {this.loadPreviousGmeState()}}>
-        Load Game
-      </button>
+      <div>
+        <button 
+          type='button' 
+          onClick={() => {document.location.reload(true)}}>
+          Reset
+        </button>
+        <button 
+          type='button' 
+          onClick={() => {this.saveCurrentStateToServer()}}>
+          Save Game
+        </button>
+        <button 
+          type='button' 
+          onClick={() => {this.loadPreviousGameState()}}>
+          Load Game
+        </button>
+      </div>
     )
   }
 
@@ -155,6 +126,7 @@ class App extends Component {
         </div>
       )
     }
+
     return (
       <div className='board'>
         {this.state.gameBoard.map((cell, boxIndex) => {
@@ -173,6 +145,13 @@ class App extends Component {
     )
   }
 
+  // get computer to make first move if determined to start first
+  componentDidMount() {
+    if (this.state.againstAI === true && this.state.currentTurn === 'O') {
+      this.aiDecision()
+    }
+  }
+
   render() {
     return (
       <div className='Container'>
@@ -180,13 +159,11 @@ class App extends Component {
           <h1>Tic-Tac-Toe</h1>
         </div>
         <div className='gameOptionButtons'>
-          {this.renderResetButton()}
-          {this.renderSaveButton()}
-          {this.renderLoadButton()}      
+          {this.renderButtons()}
         </div>
         <div className='nextPlayer'>
           <p>next Player: {this.state.currentTurn}</p>
-          {this.renderBoard()}       
+          {this.renderBoard()}     
         </div>
       </div>
     )
