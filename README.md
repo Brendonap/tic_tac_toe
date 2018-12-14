@@ -4,15 +4,8 @@
 #### `pip install -r requirements.txt` 
 #### `npm install`
 
-## db setup commands
-#### `cd api`
-#### `python`
-#### `from server import db`
-#### `db.create_all()`
-#### `exit()`
-
 ## Run servers
-#### `python server.py` 
+#### `python tictactoe.py` 
 #### `npm start`
 
 Runs the app in the development mode.<br>
